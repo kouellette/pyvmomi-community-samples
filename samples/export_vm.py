@@ -146,7 +146,7 @@ def download_device(headers, cookies, temp_target_disk,
             response.raise_for_status()
         # keeping track of progress
         current_bytes_written = 0
-        for block in response.iter_content(chunk_size=None):
+        for block in response.iter_content(chunk_size=10*1024*1024):
             # filter out keep-alive new chunks
             if block:
                 handle.write(block)
