@@ -45,6 +45,8 @@ def setup_args():
     parser.add_argument('-ds', '--datastore',
                         help='Name of datastore to use. '
                              'Defaults to largest free space in datacenter.')
+    parser.add_argument('-v', '--vram',
+                        help='Override video ram in MB to set for VM.')
     return cli.prompt_for_password(parser.parse_args())
 
 
@@ -93,6 +95,20 @@ def main():
         for error in cisr.error:
             print("%s" % error)
         return 1
+
+    if args.vram and isinstance(cisr.importSpec, vim.vm.VmImportSpec):
+        for devSpec in cisr.importSpec.configSpec.deviceChange:
+            if isinstance(devSpec.device, vim.vm.device.VirtualVideoCard):
+                devSpec.device.videoRamSizeInKB = long(args.vram) * 1024
+                break
+            else:
+                devSpec = vim.vm.device.VirtualDeviceSpec(operation="add")
+                devSpec.device = vim.vm.device.VirtualVideoCard(videoRamSizeInKB=long(args.vram) * 1024)
+                devSpec.device.unitNumber = -1
+                devSpec.device.connectable = vim.vm.device.VirtualDevice.ConnectInfo(startConnected=True,
+                                                                                     allowGuestControl=False,
+                                                                                     connected=True)
+                cisr.importSpec.configSpec.deviceChange.append(devSpec)
 
     ovf_handle.set_spec(cisr)
 
